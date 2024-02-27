@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { AddItemButton } from '../../components/buttons/AddItemButton';
 import {
   CodeEditor,
+  LabelEditor,
   PdfPreview,
   TemplateEditor
 } from '../../components/editors/TemplateEditor';
@@ -165,7 +166,10 @@ export function TemplateDrawer({
         preview={templateProps.preview}
         templateType={templateType}
         template={template}
-        editors={[CodeEditor]}
+        editors={[
+          CodeEditor,
+          ...(templateType === 'label' ? [LabelEditor] : [])
+        ]}
         previewAreas={[PdfPreview]}
       />
     </Stack>
