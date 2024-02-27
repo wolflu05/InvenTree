@@ -10,18 +10,18 @@ import {
 import { TablerIconsProps } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 
+import { convertUnit, units } from '../utils';
+
 const inputTemplates: Record<string, InputGroupInputProps> = {
   unit: {
     key: '',
     label: t`Unit`,
     type: 'select',
     defaultValue: 'mm',
-    selectOptions: [
-      { value: 'px', label: 'px' },
-      { value: 'mm', label: 'mm' },
-      { value: 'cm', label: 'cm' },
-      { value: 'in', label: 'in' }
-    ]
+    selectOptions: Object.entries(units).map(([key, value]) => ({
+      value: key,
+      label: value.name
+    }))
   }
 };
 
@@ -41,15 +41,34 @@ type InputGroupRow = {
   columns: InputGroupInputProps[];
 };
 
-type UseInputGroupProps = {
+/**
+ * updateCanvas - updates the canvas with the new values (by default its called by onBlur if onBlur is not defined)
+ */
+export type UseInputGroupProps<T extends any[]> = {
   name: string;
   icon: (props: TablerIconsProps) => JSX.Element;
   inputRows: InputGroupRow[];
   onChange?: (key: string, value: any, allValues: Record<string, any>) => void;
-  onBlur?: (key: string, value: any, allValues: Record<string, any>) => void;
+  onBlur?: (
+    key: string,
+    value: any,
+    allValues: Record<string, any>,
+    oldState: Record<string, any>,
+    state: UseInputGroupProps<T>
+  ) => void;
+  updateCanvas?: (values: Record<string, any>) => void;
+  updateInputs?: (...args: T) => void;
 };
 
-export const useInputGroupState = (props: UseInputGroupProps) => {
+type UseInputGroupStateReturnType<T extends any[]> = UseInputGroupProps<T> & {
+  value: Record<string, any>;
+  setValue: (key: string, value: any, trigger?: boolean) => void;
+  triggerUpdate: (...args: T) => void;
+};
+
+export const useInputGroupState = <T extends any[]>(
+  props: UseInputGroupProps<T>
+): UseInputGroupStateReturnType<T> => {
   const { inputRows, onChange } = props;
   const [state, setState] = useState(() => {
     const _state: Record<string, any> = {};
@@ -78,19 +97,52 @@ export const useInputGroupState = (props: UseInputGroupProps) => {
     [onChange]
   );
 
+  const onBlur = useCallback(
+    (
+      key: string,
+      value: any,
+      allValues: Record<string, any>,
+      oldState: Record<string, any>,
+      state: UseInputGroupProps<T>
+    ) => {
+      if (props.onBlur) {
+        props.onBlur(key, value, allValues, oldState, state);
+      } else {
+        props.updateCanvas?.(allValues);
+      }
+    },
+    [props.onBlur, props.updateCanvas]
+  );
+
+  const triggerUpdate = useCallback(
+    (...args: T) => {
+      props.updateInputs?.(...args);
+    },
+    [props.updateInputs]
+  );
+
   return {
     ...props,
     value: state,
-    setValue
+    setValue,
+    onBlur,
+    triggerUpdate
   };
 };
 
-type InputGroupProps = Omit<UseInputGroupProps, 'onChange'> & {
+type InputGroupProps<T extends any[]> = Omit<
+  UseInputGroupProps<T>,
+  'onChange'
+> & {
   value: Record<string, any>;
   setValue: (key: string, value: any, trigger: boolean) => void;
 };
 
-export const InputGroup = ({ state }: { state: InputGroupProps }) => {
+export const InputGroup = <T extends any[]>({
+  state
+}: {
+  state: InputGroupProps<T>;
+}) => {
   const { name, icon: Icon, inputRows, value, setValue: _setValue } = state;
   const setValue = useCallback(
     (key: string, value: any) => {
@@ -125,10 +177,12 @@ export const InputGroup = ({ state }: { state: InputGroupProps }) => {
                   label={input.label}
                   value={value[key]}
                   onChange={(value) => setValue(key, value)}
-                  onBlur={() => state.onBlur?.(key, value[key], value)}
+                  onBlur={() =>
+                    state.onBlur?.(key, value[key], value, value, state)
+                  }
                   precision={10}
                   formatter={(value) => {
-                    let v = parseFloat(value);
+                    const v = parseFloat(value);
 
                     if (Number.isNaN(v) || !Number.isFinite(v)) {
                       return value;
@@ -149,7 +203,9 @@ export const InputGroup = ({ state }: { state: InputGroupProps }) => {
                   mt={5}
                   checked={value[key]}
                   onChange={(e) => setValue(key, e.currentTarget.checked)}
-                  onBlur={() => state.onBlur?.(key, value[key], value)}
+                  onBlur={() =>
+                    state.onBlur?.(key, value[key], value, value, state)
+                  }
                 />
               );
             }
@@ -166,7 +222,13 @@ export const InputGroup = ({ state }: { state: InputGroupProps }) => {
                   value={value[key]}
                   onChange={(v) => {
                     setValue(key, v);
-                    state?.onBlur?.(key, v, { ...value, [key]: v });
+                    state?.onBlur?.(
+                      key,
+                      v,
+                      { ...value, [key]: v },
+                      value,
+                      state
+                    );
                   }}
                 />
               );
@@ -176,4 +238,36 @@ export const InputGroup = ({ state }: { state: InputGroupProps }) => {
       ))}
     </Stack>
   );
+};
+
+export const unitInputGroupBlur = ({
+  unitKey,
+  valueKeys
+}: {
+  unitKey: string;
+  valueKeys: string[];
+}) => {
+  return (
+    key: string,
+    value: any,
+    _values: Record<string, any>,
+    oldState: Record<string, any>,
+    state: any
+  ) => {
+    let values = { ..._values };
+
+    // Convert all values to the new unit if unit has changed
+    if (key === unitKey) {
+      for (const unitValue of valueKeys) {
+        values[unitValue] = convertUnit(
+          values[unitValue],
+          oldState[unitKey],
+          values[unitKey]
+        );
+        state.setValue(unitValue, values[unitValue]);
+      }
+    }
+
+    state.updateCanvas?.(values);
+  };
 };

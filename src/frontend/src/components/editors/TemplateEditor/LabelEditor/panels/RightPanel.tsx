@@ -18,10 +18,9 @@ import {
   IconStack2,
   TablerIconsProps
 } from '@tabler/icons-react';
-import { fabric } from 'fabric';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { useLabelEditorContext } from '../LabelEditor';
+import { useLabelEditorState } from '../LabelEditorContext';
 import { LabelEditorObjectsMap } from '../objects';
 import { InputGroup, useInputGroupState } from './Components';
 
@@ -38,7 +37,7 @@ type RightPanelType = {
 };
 
 const DocumentRightPanel: RightPanelComponent = () => {
-  const { template } = useLabelEditorContext();
+  const template = useLabelEditorState((s) => s.template);
 
   const dimensions = useInputGroupState({
     name: t`Dimensions`,
@@ -121,7 +120,9 @@ const DocumentRightPanel: RightPanelComponent = () => {
 };
 
 const ElementsRightPanel: RightPanelComponent = () => {
-  const { objects, editor, selectedObjects } = useLabelEditorContext();
+  const objects = useLabelEditorState((s) => s.objects);
+  const editor = useLabelEditorState((s) => s.editor);
+  const selectedObjects = useLabelEditorState((s) => s.selectedObjects);
 
   return (
     <Stack p={10}>
@@ -148,7 +149,7 @@ const ElementsRightPanel: RightPanelComponent = () => {
 };
 
 const ObjectOptionsRightPanelName: RightPanelNameComponent = () => {
-  const { selectedObjects } = useLabelEditorContext();
+  const selectedObjects = useLabelEditorState((s) => s.selectedObjects);
   if (!selectedObjects) return <></>;
 
   if (selectedObjects.length === 0) {
@@ -170,7 +171,21 @@ const ObjectOptionsRightPanelName: RightPanelNameComponent = () => {
 };
 
 const ObjectOptionsRightPanel: RightPanelComponent = () => {
-  const { selectedObjects } = useLabelEditorContext();
+  const selectedObjects = useLabelEditorState((s) => s.selectedObjects);
+  const [activePanels, setActivePanels] = useState<string[]>([]);
+
+  const component = useMemo(() => {
+    if (selectedObjects?.length !== 1) return null;
+    if ('group' in selectedObjects[0]) return null;
+
+    const object = selectedObjects[0];
+    return LabelEditorObjectsMap[object.type as string];
+  }, [selectedObjects]);
+
+  useEffect(() => {
+    if (!component) return;
+    setActivePanels([component.settingBlocks[0].key]);
+  }, [component]);
 
   let error = null;
   if (!selectedObjects) return <></>;
@@ -185,7 +200,7 @@ const ObjectOptionsRightPanel: RightPanelComponent = () => {
     );
   }
 
-  if (error) {
+  if (error || component === null) {
     return (
       <Container mt={10}>
         <Text italic>{error}</Text>
@@ -193,13 +208,11 @@ const ObjectOptionsRightPanel: RightPanelComponent = () => {
     );
   }
 
-  const object = selectedObjects[0];
-  const component = LabelEditorObjectsMap[object.type as string];
-
   return (
     <Stack>
       <Accordion
-        defaultValue={[component.settingBlocks[0].key]}
+        value={activePanels}
+        onChange={setActivePanels}
         styles={{
           control: {
             paddingLeft: 10

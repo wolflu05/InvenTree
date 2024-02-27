@@ -4,10 +4,11 @@ import { IconArrowAutofitWidth } from '@tabler/icons-react';
 import { useState } from 'react';
 
 import { useEvents } from '../../../../../hooks/UseEvents';
-import { useLabelEditorContext } from '../LabelEditor';
+import { useLabelEditorState } from '../LabelEditorContext';
 
 export function FooterPanel() {
-  const { editor, zoomToFit } = useLabelEditorContext();
+  const editor = useLabelEditorState((s) => s.editor);
+  const zoomToFit = useLabelEditorState((s) => s.zoomToFit);
   const [zoom, setZoom] = useState(1);
 
   useEvents(
@@ -29,7 +30,7 @@ export function FooterPanel() {
       <Group>
         <Text w={120}>Zoom: {Math.round(zoom * 1000) / 10}%</Text>
         <Tooltip label={t`Zoom to fit`} position="top">
-          <ActionIcon onClick={() => zoomToFit()} p={2}>
+          <ActionIcon onClick={() => zoomToFit?.()} p={2}>
             <IconArrowAutofitWidth size="1.5rem" />
           </ActionIcon>
         </Tooltip>

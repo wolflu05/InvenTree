@@ -1,11 +1,11 @@
 import { ActionIcon, Stack, Tooltip } from '@mantine/core';
 import { useCallback } from 'react';
 
-import { useLabelEditorContext } from '../LabelEditor';
+import { useLabelEditorState } from '../LabelEditorContext';
 import { LabelEditorObject, LabelEditorObjects } from '../objects';
 
 export function LeftPanel() {
-  const { editor } = useLabelEditorContext();
+  const editor = useLabelEditorState((s) => s.editor);
 
   const addComponent = useCallback(
     (component: LabelEditorObject) => () => {
