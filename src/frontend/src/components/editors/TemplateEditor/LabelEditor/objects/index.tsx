@@ -17,11 +17,12 @@ export type LabelEditorObject = {
   icon: (props: TablerIconsProps) => React.JSX.Element;
   settingBlocks: SettingBlock[];
   fabricElement: any;
+  defaultOpen: string[];
 };
 
 export const LabelEditorObjects: LabelEditorObject[] = [Rectangle, Circle];
 
 export const LabelEditorObjectsMap: Record<string, LabelEditorObject> = {
-  rectangle: Rectangle,
+  rect: Rectangle,
   circle: Circle
 };

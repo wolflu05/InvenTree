@@ -7,6 +7,7 @@ import {
   Select,
   Stack,
   Switch,
+  TextInput,
   Title,
   Tooltip
 } from '@mantine/core';
@@ -14,32 +15,35 @@ import { IconCheck, TablerIconsProps } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useEvents } from '../../../../../hooks/UseEvents';
+import { PageSettingsType, useLabelEditorStore } from '../LabelEditorContext';
 import { convertUnit, units } from '../utils';
 
-const inputTemplates: Record<string, InputGroupInputProps> = {
+const getInputTemplates = (
+  pageSettings: PageSettingsType
+): Record<string, InputGroupInputProps> => ({
   unit: {
     key: '',
     label: t`Unit`,
     type: 'select',
-    defaultValue: 'mm',
+    defaultValue: pageSettings.unit['length.unit'],
     selectOptions: Object.entries(units).map(([key, value]) => ({
       value: key,
       label: value.name
     }))
   }
-};
+});
 
 type InputGroupInputProps = {
   key: string;
   disabled?: boolean;
 } & {
   label?: string;
-  type?: 'number' | 'switch' | 'checkbox' | 'select';
+  type?: 'number' | 'switch' | 'checkbox' | 'select' | 'text';
   icon?: (props: TablerIconsProps) => JSX.Element;
   tooltip?: string;
   defaultValue?: number | boolean | string;
   selectOptions?: { value: string; label: string }[];
-  template?: keyof typeof inputTemplates;
+  template?: 'unit';
 };
 
 type InputGroupRow = {
@@ -76,13 +80,20 @@ export const useInputGroupState = <T extends any[]>(
   props: UseInputGroupProps<T>
 ): UseInputGroupStateReturnType<T> => {
   const { inputRows, onChange } = props;
+  const labelEditorStore = useLabelEditorStore();
+
   const [state, setState] = useState(() => {
     const _state: Record<string, any> = {};
     inputRows.forEach((row) => {
       row.columns.forEach((_input) => {
         let input = _input;
         if (input.template) {
-          input = { ...inputTemplates[input.template], ..._input };
+          input = {
+            ...getInputTemplates(labelEditorStore.getState().pageSettings)[
+              input.template
+            ],
+            ..._input
+          };
         }
         _state[`${row.key}.${input.key}`] = input.defaultValue;
       });
@@ -156,6 +167,7 @@ export const InputGroup = <T extends any[]>({
     },
     [_setValue]
   );
+  const labelEditorStore = useLabelEditorStore();
 
   return (
     <Stack style={{ gap: 0 }}>
@@ -170,9 +182,30 @@ export const InputGroup = <T extends any[]>({
           {row.columns.map((_input, idx) => {
             let input = _input;
             if (input.template) {
-              input = { ...inputTemplates[input.template], ..._input };
+              input = {
+                ...getInputTemplates(labelEditorStore.getState().pageSettings)[
+                  input.template
+                ],
+                ..._input
+              };
             }
             const key = `${row.key}.${input.key}`;
+
+            if (input.type === 'text') {
+              return (
+                <TextInput
+                  key={idx}
+                  size="xs"
+                  disabled={input.disabled}
+                  label={input.label}
+                  value={value[key]}
+                  onChange={(e) => setValue(key, e.currentTarget.value)}
+                  onBlur={() =>
+                    state.onBlur?.(key, value[key], value, value, state)
+                  }
+                />
+              );
+            }
 
             if (input.type === 'number') {
               return (

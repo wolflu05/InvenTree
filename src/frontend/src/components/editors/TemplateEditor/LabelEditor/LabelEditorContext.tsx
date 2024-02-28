@@ -3,13 +3,15 @@ import { FabricJSEditor } from 'fabricjs-react';
 import { createContext, useContext } from 'react';
 import { createStore, useStore } from 'zustand';
 
+import { RightPanelKeyType } from './panels/RightPanel';
+
 export type LabelEditorState = {
   editor?: FabricJSEditor;
   objects: fabric.Object[];
   selectedObjects: fabric.Object[];
   handleDrag?: (clientX?: number, clientY?: number) => void;
   zoomToFit?: () => void;
-  setRightPanel?: (panel: string) => void;
+  setRightPanel?: (panel: RightPanelKeyType) => void;
   pageWidth: number;
   pageHeight: number;
   template: Record<string, any>;
@@ -25,6 +27,9 @@ const defaultPageSettings = {
     'size.size': 1 / 600,
     'size.unit': 'in',
     'dpi.value': 600
+  },
+  unit: {
+    'length.unit': 'mm'
   },
   snap: {
     'grid.enable': true,

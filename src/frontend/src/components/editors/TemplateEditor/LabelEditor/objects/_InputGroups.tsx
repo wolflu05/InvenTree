@@ -2,7 +2,8 @@ import { t } from '@lingui/macro';
 import {
   IconAngle,
   IconArrowsRightDown,
-  IconDimensions
+  IconDimensions,
+  IconTag
 } from '@tabler/icons-react';
 import { fabric } from 'fabric';
 import { useEffect, useMemo } from 'react';
@@ -117,6 +118,23 @@ export const useObjectInputGroupState = <T extends any[]>(
   }, [selectedObjects]);
 
   return inputState;
+};
+
+export const NameInputGroup = () => {
+  const name = useObjectInputGroupState({
+    name: t`Name`,
+    icon: IconTag,
+    connections: [{ objAttr: 'name', inputKey: 'name.name' }],
+    inputRows: [
+      {
+        key: 'name',
+        columns: [{ key: 'name', type: 'text' }]
+      }
+    ],
+    triggerUpdateEvents: ['object:modified']
+  });
+
+  return <InputGroup state={name} />;
 };
 
 export const PositionInputGroup = () => {

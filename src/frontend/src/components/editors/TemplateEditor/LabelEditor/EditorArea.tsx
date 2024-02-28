@@ -28,7 +28,8 @@ export const EditorArea = () => {
     isDragging: false,
     lastPosX: 0,
     lastPosY: 0,
-    pageElement: null as fabric.Object | null
+    pageElement: null as fabric.Object | null,
+    ignoreObjects: new Set<fabric.Object>()
   });
 
   const { pageWidth, pageHeight } = useLabelEditorState((s) => ({
@@ -163,7 +164,8 @@ export const EditorArea = () => {
       });
 
       on('object:added', (e) => {
-        if (e.target === editorState.current.pageElement) return;
+        if (editorState.current.ignoreObjects.has(e.target as fabric.Object))
+          return;
         labelEditorStore.setState((s) => ({
           objects: [...s.objects, e.target as fabric.Object]
         }));
@@ -187,15 +189,18 @@ export const EditorArea = () => {
           selectedObjects.length !== 1 ||
           'group' in selectedObjects[0]
         ) {
-          setRightPanel?.('elements');
+          setRightPanel?.('objects');
         } else {
           setRightPanel?.('object-options');
         }
       };
 
       on('selection:cleared', (e) => {
-        labelEditorStore.setState({ selectedObjects: [] });
-        autoSwitchPanel(e);
+        // clear selection after a small delay so that object options panel onBlur event can fire first
+        setTimeout(() => {
+          labelEditorStore.setState({ selectedObjects: [] });
+          autoSwitchPanel(e);
+        }, 1);
       });
 
       on('selection:created', (e) => {
@@ -394,6 +399,7 @@ export const EditorArea = () => {
     });
 
     editorState.current.pageElement = pageElement;
+    editorState.current.ignoreObjects.add(pageElement);
     editor.canvas.add(pageElement);
 
     handleDrag();

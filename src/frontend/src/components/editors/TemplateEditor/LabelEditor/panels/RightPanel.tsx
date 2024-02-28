@@ -19,6 +19,7 @@ import {
   IconLock,
   IconMagnet,
   IconResize,
+  IconRuler,
   IconStack2,
   TablerIconsProps
 } from '@tabler/icons-react';
@@ -134,6 +135,24 @@ const DocumentRightPanel: RightPanelComponent = () => {
     ]
   });
 
+  const unit = usePageSettingsInputGroupState({
+    name: t`Default units`,
+    icon: IconRuler,
+    pageSettingsKey: 'unit',
+    inputRows: [
+      {
+        key: 'length',
+        columns: [
+          {
+            key: 'unit',
+            label: t`Length`,
+            template: 'unit'
+          }
+        ]
+      }
+    ]
+  });
+
   const grid = usePageSettingsInputGroupState({
     name: t`Grid`,
     icon: IconGrid4x4,
@@ -235,6 +254,7 @@ const DocumentRightPanel: RightPanelComponent = () => {
   return (
     <Stack p={10} spacing="lg">
       <InputGroup state={dimensions} />
+      <InputGroup state={unit} />
       <InputGroup state={grid} />
       <InputGroup state={snap} />
       <InputGroup state={scale} />
@@ -242,7 +262,7 @@ const DocumentRightPanel: RightPanelComponent = () => {
   );
 };
 
-const ElementsRightPanel: RightPanelComponent = () => {
+const ObjectsRightPanel: RightPanelComponent = () => {
   const objects = useLabelEditorState((s) => s.objects);
   const editor = useLabelEditorState((s) => s.editor);
   const selectedObjects = useLabelEditorState((s) => s.selectedObjects);
@@ -278,11 +298,16 @@ const ElementsRightPanel: RightPanelComponent = () => {
                 fontWeight: selectedObjectsList.includes(object) ? 600 : 400
               }}
             >
-              {object.type} ({index})
+              {object.name}
             </Text>
           </List.Item>
         ))}
       </List>
+      {objects.length === 0 && (
+        <Text italic align="center" mt={-10}>
+          <Trans>No objects</Trans>
+        </Text>
+      )}
     </Stack>
   );
 };
@@ -324,7 +349,7 @@ const ObjectOptionsRightPanel: RightPanelComponent = () => {
   useEffect(() => {
     if (!component) return;
     setActivePanels([]); // fix bug where the first panel is not opened sometimes
-    setActivePanels([component.settingBlocks[0].key]);
+    setActivePanels(component.defaultOpen);
   }, [component]);
 
   let error = null;
@@ -391,10 +416,10 @@ const panels: RightPanelType[] = [
     panel: DocumentRightPanel
   },
   {
-    key: 'elements',
-    name: t`Elements`,
+    key: 'objects',
+    name: t`Objects`,
     icon: IconStack2,
-    panel: ElementsRightPanel
+    panel: ObjectsRightPanel
   },
   {
     key: 'object-options',
@@ -403,9 +428,12 @@ const panels: RightPanelType[] = [
     panel: ObjectOptionsRightPanel
   }
 ];
+export type RightPanelKeyType = 'document' | 'objects' | 'object-options';
 
 export function RightPanel() {
-  const [activePanel, setActivePanel] = useState<null | string>(panels[0].key);
+  const [activePanel, setActivePanel] = useState<RightPanelKeyType>(
+    panels[0].key as RightPanelKeyType
+  );
   const labelEditorStore = useLabelEditorStore();
 
   useEffect(() => {
@@ -417,7 +445,7 @@ export function RightPanel() {
       <Tabs
         orientation="vertical"
         value={activePanel}
-        onTabChange={setActivePanel}
+        onTabChange={setActivePanel as (panel: string) => void}
         placement="right"
         style={{ flex: 1, display: 'flex' }}
       >

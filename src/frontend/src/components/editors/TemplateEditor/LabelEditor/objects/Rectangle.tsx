@@ -4,13 +4,15 @@ import { fabric } from 'fabric';
 
 import { LabelEditorObject } from '.';
 import { LayoutPanelBlock } from './Rectangle.settings';
-import { createFabricObject } from './_BaseObject';
+import { GeneralSettingBlock, createFabricObject } from './_BaseObject';
 
 export const Rectangle: LabelEditorObject = {
-  key: 'rectangle',
+  key: 'rect',
   name: t`Rectangle`,
   icon: IconRectangleFilled,
+  defaultOpen: ['general', 'layout'],
   settingBlocks: [
+    GeneralSettingBlock,
     {
       key: 'layout',
       name: t`Layout`,
@@ -18,6 +20,13 @@ export const Rectangle: LabelEditorObject = {
     }
   ],
   fabricElement: createFabricObject(fabric.Rect, {
-    type: 'rectangle'
+    type: 'rect',
+
+    initialize(props) {
+      this.width = 50;
+      this.height = 50;
+
+      this.callSuper('initialize', props);
+    }
   })
 };

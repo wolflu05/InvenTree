@@ -1,25 +1,30 @@
 import { ActionIcon, Stack, Tooltip } from '@mantine/core';
 import { useCallback } from 'react';
 
-import { useLabelEditorState } from '../LabelEditorContext';
+import {
+  useLabelEditorState,
+  useLabelEditorStore
+} from '../LabelEditorContext';
 import { LabelEditorObject, LabelEditorObjects } from '../objects';
 
 export function LeftPanel() {
   const editor = useLabelEditorState((s) => s.editor);
+  const labelEditorStore = useLabelEditorStore();
 
   const addComponent = useCallback(
     (component: LabelEditorObject) => () => {
       if (!editor) return;
 
+      const state = labelEditorStore.getState();
       const obj = new component.fabricElement({
         left: 10,
         top: 10,
-        width: 50,
-        height: 50
+        state
       });
 
       editor.canvas.add(obj);
       editor.canvas.setActiveObject(obj);
+      state.setRightPanel?.('object-options');
     },
     [editor]
   );
