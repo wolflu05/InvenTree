@@ -9,13 +9,33 @@ export type LabelEditorState = {
   selectedObjects: fabric.Object[];
   handleDrag?: (clientX?: number, clientY?: number) => void;
   zoomToFit?: () => void;
+  setRightPanel?: (panel: string) => void;
   pageWidth: number;
   pageHeight: number;
   template: Record<string, any>;
+  pageSettings: PageSettingsType;
 };
 type LabelEditorStateInitProps = Pick<LabelEditorState, 'template'>;
 
 export type LabelEditorStore = ReturnType<typeof createLabelEditorStore>;
+
+const defaultPageSettings = {
+  grid: {
+    'show.show': false,
+    'size.size': 1 / 600,
+    'size.unit': 'in',
+    'dpi.value': 600
+  },
+  snap: {
+    'grid.enable': true,
+    'angle.enable': true,
+    'angle.value': 45
+  },
+  scale: {
+    'uniform.enable': true
+  }
+};
+export type PageSettingsType = typeof defaultPageSettings;
 
 export const createLabelEditorStore = (
   initState: LabelEditorStateInitProps
@@ -25,7 +45,8 @@ export const createLabelEditorStore = (
     pageWidth: 0,
     pageHeight: 0,
     objects: [],
-    selectedObjects: []
+    selectedObjects: [],
+    pageSettings: defaultPageSettings
   }));
 };
 

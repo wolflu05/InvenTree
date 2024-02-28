@@ -1,15 +1,19 @@
 import { t } from '@lingui/macro';
 import {
+  Checkbox,
   Group,
+  Input,
   NumberInput,
   Select,
   Stack,
   Switch,
-  Title
+  Title,
+  Tooltip
 } from '@mantine/core';
-import { TablerIconsProps } from '@tabler/icons-react';
-import { useCallback, useState } from 'react';
+import { IconCheck, TablerIconsProps } from '@tabler/icons-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useEvents } from '../../../../../hooks/UseEvents';
 import { convertUnit, units } from '../utils';
 
 const inputTemplates: Record<string, InputGroupInputProps> = {
@@ -30,7 +34,9 @@ type InputGroupInputProps = {
   disabled?: boolean;
 } & {
   label?: string;
-  type?: 'number' | 'boolean' | 'select';
+  type?: 'number' | 'switch' | 'checkbox' | 'select';
+  icon?: (props: TablerIconsProps) => JSX.Element;
+  tooltip?: string;
   defaultValue?: number | boolean | string;
   selectOptions?: { value: string; label: string }[];
   template?: keyof typeof inputTemplates;
@@ -54,7 +60,7 @@ export type UseInputGroupProps<T extends any[]> = {
     value: any,
     allValues: Record<string, any>,
     oldState: Record<string, any>,
-    state: UseInputGroupProps<T>
+    state: UseInputGroupStateReturnType<T>
   ) => void;
   updateCanvas?: (values: Record<string, any>) => void;
   updateInputs?: (...args: T) => void;
@@ -103,7 +109,7 @@ export const useInputGroupState = <T extends any[]>(
       value: any,
       allValues: Record<string, any>,
       oldState: Record<string, any>,
-      state: UseInputGroupProps<T>
+      state: UseInputGroupStateReturnType<T>
     ) => {
       if (props.onBlur) {
         props.onBlur(key, value, allValues, oldState, state);
@@ -141,7 +147,7 @@ type InputGroupProps<T extends any[]> = Omit<
 export const InputGroup = <T extends any[]>({
   state
 }: {
-  state: InputGroupProps<T>;
+  state: UseInputGroupStateReturnType<T>;
 }) => {
   const { name, icon: Icon, inputRows, value, setValue: _setValue } = state;
   const setValue = useCallback(
@@ -177,6 +183,7 @@ export const InputGroup = <T extends any[]>({
                   label={input.label}
                   value={value[key]}
                   onChange={(value) => setValue(key, value)}
+                  onClick={() => console.log('T')}
                   onBlur={() =>
                     state.onBlur?.(key, value[key], value, value, state)
                   }
@@ -190,11 +197,17 @@ export const InputGroup = <T extends any[]>({
 
                     return `${v}`;
                   }}
+                  stepHoldDelay={500}
+                  stepHoldInterval={100}
+                  rightSectionProps={{
+                    onClick: () =>
+                      state.onBlur?.(key, value[key], value, value, state)
+                  }}
                 />
               );
             }
 
-            if (input.type === 'boolean') {
+            if (input.type === 'switch') {
               return (
                 <Switch
                   key={idx}
@@ -202,11 +215,73 @@ export const InputGroup = <T extends any[]>({
                   disabled={input.disabled}
                   mt={5}
                   checked={value[key]}
-                  onChange={(e) => setValue(key, e.currentTarget.checked)}
-                  onBlur={() =>
-                    state.onBlur?.(key, value[key], value, value, state)
-                  }
+                  onChange={(e) => {
+                    setValue(key, e.currentTarget.checked);
+                    const newValue = {
+                      ...value,
+                      [key]: e.currentTarget.checked
+                    };
+                    state.onBlur?.(
+                      key,
+                      e.currentTarget.checked,
+                      newValue,
+                      value,
+                      state
+                    );
+                  }}
                 />
+              );
+            }
+
+            if (input.type === 'checkbox') {
+              const showTooltip = !!input.tooltip;
+              return (
+                <Tooltip
+                  label={input.tooltip}
+                  events={{
+                    hover: showTooltip,
+                    focus: showTooltip,
+                    touch: showTooltip
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Checkbox
+                    mt={10}
+                    mr={8}
+                    style={{ alignSelf: 'flex-end' }}
+                    styles={{
+                      label: { fontSize: '0.875rem', cursor: 'pointer' },
+                      input: { cursor: 'pointer' }
+                    }}
+                    key={idx}
+                    icon={({ className }) =>
+                      input.icon ? (
+                        <input.icon className={className} />
+                      ) : (
+                        <IconCheck className={className} />
+                      )
+                    }
+                    disabled={input.disabled}
+                    label={input.label ? input.label : undefined}
+                    indeterminate={input.icon ? !value[key] : false}
+                    checked={value[key]}
+                    onChange={(e) => {
+                      setValue(key, e.currentTarget.checked);
+                      const newValue = {
+                        ...value,
+                        [key]: e.currentTarget.checked
+                      };
+                      state.onBlur?.(
+                        key,
+                        e.currentTarget.checked,
+                        newValue,
+                        value,
+                        state
+                      );
+                    }}
+                    size={input.icon ? 'lg' : undefined}
+                  />
+                </Tooltip>
               );
             }
 

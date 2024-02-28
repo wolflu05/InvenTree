@@ -4,7 +4,12 @@ import { FabricJSCanvas, useFabricJSEditor } from 'fabricjs-react';
 import { useCallback, useEffect, useRef } from 'react';
 
 import { useEvents } from '../../../../hooks/UseEvents';
-import { useLabelEditorState, useLabelEditorStore } from './LabelEditorContext';
+import {
+  LabelEditorState,
+  useLabelEditorState,
+  useLabelEditorStore
+} from './LabelEditorContext';
+import { unitToPixel } from './utils';
 
 const useStyles = createStyles((theme) => ({
   editorCanvas: {
@@ -104,6 +109,7 @@ export const EditorArea = () => {
       if (!editor) return;
 
       editor.canvas.fireMiddleClick = true;
+      editor.canvas.uniScaleKey = 'altKey';
 
       on('mouse:wheel', (event) => {
         const delta = event.e.deltaY;
@@ -169,42 +175,153 @@ export const EditorArea = () => {
         }));
       });
 
+      // handle selections
+      const autoSwitchPanel = (e: fabric.IEvent<MouseEvent>) => {
+        // check if selection was not set by the user
+        if (e.e === undefined) return;
+        const { setRightPanel, selectedObjects } = labelEditorStore.getState();
+
+        if (selectedObjects.length === 0) {
+          setRightPanel?.('document');
+        } else if (
+          selectedObjects.length !== 1 ||
+          'group' in selectedObjects[0]
+        ) {
+          setRightPanel?.('elements');
+        } else {
+          setRightPanel?.('object-options');
+        }
+      };
+
       on('selection:cleared', (e) => {
         labelEditorStore.setState({ selectedObjects: [] });
+        autoSwitchPanel(e);
       });
 
       on('selection:created', (e) => {
         labelEditorStore.setState({
           selectedObjects: e.selected as fabric.Object[]
         });
+        autoSwitchPanel(e);
       });
 
       on('selection:updated', (e) => {
         labelEditorStore.setState({
           selectedObjects: e.selected as fabric.Object[]
         });
+        autoSwitchPanel(e);
       });
 
+      // change width and height instead of scaling the object
       on('object:scaling', (e) => {
+        const settings = labelEditorStore.getState().pageSettings;
         const obj = e.target as fabric.Object;
+        const corner = e.transform?.corner;
 
-        // change width and height instead of scaling the object
-        obj.set({
-          height: obj.height! * obj.scaleY!,
-          width: obj.width! * obj.scaleX!,
-          scaleX: 1,
-          scaleY: 1,
-          noScaleCache: false
-        });
+        if (
+          obj.left === undefined ||
+          obj.width === undefined ||
+          obj.scaleX === undefined ||
+          obj.top === undefined ||
+          obj.height === undefined ||
+          obj.scaleY === undefined ||
+          obj.strokeWidth === undefined ||
+          corner === undefined
+        )
+          return;
+
+        // if grid is enabled, snap to grid when resizing object
+        // inspired by: https://stackoverflow.com/a/70673823
+        if (settings.snap['grid.enable']) {
+          const gridSize = unitToPixel(
+            settings.grid['size.size'],
+            settings.grid['size.unit']
+          );
+
+          const [width, height] = [obj.getScaledWidth(), obj.getScaledHeight()];
+
+          const snapGrid = (n: number) => {
+            return Math.round(n / gridSize) * gridSize;
+          };
+
+          // snap X axis
+          if (['tl', 'ml', 'bl'].includes(corner)) {
+            const tl = snapGrid(obj.left);
+            obj.scaleX =
+              (width + obj.left - tl) / (obj.width + obj.strokeWidth);
+            obj.left = tl;
+          } else if (['tr', 'mr', 'br'].includes(corner)) {
+            const tl = snapGrid(obj.left + width);
+            obj.scaleX = (tl - obj.left) / (obj.width + obj.strokeWidth);
+          }
+
+          // snap Y axis
+          if (['tl', 'mt', 'tr'].includes(corner)) {
+            const tt = snapGrid(obj.top);
+            obj.scaleY =
+              (height + obj.top - tt) / (obj.height + obj.strokeWidth);
+            obj.top = tt;
+          } else if (['bl', 'mb', 'br'].includes(corner)) {
+            const tt = snapGrid(obj.top + height);
+            obj.scaleY = (tt - obj.top) / (obj.height + obj.strokeWidth);
+          }
+        }
+
+        obj.width = obj.width * obj.scaleX;
+        obj.height = obj.height * obj.scaleY;
+        obj.scaleX = 1;
+        obj.scaleY = 1;
+        obj.noScaleCache = false;
+        obj.setCoords();
+      });
+
+      // snap to grid when moving object
+      on('object:moving', (e) => {
+        const settings = labelEditorStore.getState().pageSettings;
+        if (!settings.snap['grid.enable']) return;
+        const obj = e.target as fabric.Object;
+        const gridSize = unitToPixel(
+          settings.grid['size.size'],
+          settings.grid['size.unit']
+        );
+
+        if (
+          Math.round((obj.left! / gridSize) * 1) % 1 === 0 &&
+          Math.round((obj.top! / gridSize) * 1) % 1 === 0
+        ) {
+          obj
+            .set({
+              left: Math.round(obj.left! / gridSize) * gridSize,
+              top: Math.round(obj.top! / gridSize) * gridSize
+            })
+            .setCoords();
+        }
+      });
+
+      // snap when rotating object
+      on('object:rotating', (e) => {
+        const snap = labelEditorStore.getState().pageSettings.snap;
+        const obj = e.target as fabric.Object;
+        if (snap['angle.enable']) {
+          obj.snapAngle = e.e.altKey ? 0.1 : snap['angle.value'];
+        } else {
+          obj.snapAngle = e.e.altKey ? 45 : 0.1;
+        }
       });
     },
     [editor]
   );
 
+  // register keyboard shortcuts
   useEvents(
     window,
     (on) => {
       on('keyup', (event) => {
+        // Do not trigger keyboard events when typing in input fields
+        if (/INPUT|SELECT|TEXTAREA/i.test((event.target as any).tagName))
+          return;
+
+        // Delete selected objects
         if (event.key === 'Backspace' || event.key === 'Delete') {
           const selectedObjects = labelEditorStore.getState().selectedObjects;
           if (selectedObjects) {
@@ -213,8 +330,42 @@ export const EditorArea = () => {
             });
             editor?.canvas.discardActiveObject();
             editor?.canvas.renderAll();
+            labelEditorStore.getState().setRightPanel?.('document');
           }
         }
+      });
+
+      on('keydown', (event) => {
+        // Do not trigger keyboard events when typing in input fields
+        if (/INPUT|SELECT|TEXTAREA/i.test((event.target as any).tagName))
+          return;
+
+        // Move selected objects with arrow keys
+        const move = (direction: [number, number]) => {
+          const selectedObjects = labelEditorStore.getState().selectedObjects;
+          if (!selectedObjects) return;
+          const gridSettings = labelEditorStore.getState().pageSettings.grid;
+          const gridSize = unitToPixel(
+            gridSettings['size.size'],
+            gridSettings['size.unit']
+          );
+
+          selectedObjects.forEach((object) => {
+            object.set({
+              left: object.left! + direction[0] * gridSize,
+              top: object.top! + direction[1] * gridSize
+            });
+            object.setCoords();
+            object.canvas?.fire('object:moving', { target: object });
+          });
+          editor?.canvas.renderAll();
+        };
+
+        const f = event.altKey ? 10 : 1;
+        if (event.key === 'ArrowUp') move([0, -f]);
+        if (event.key === 'ArrowDown') move([0, f]);
+        if (event.key === 'ArrowLeft') move([-f, 0]);
+        if (event.key === 'ArrowRight') move([f, 0]);
       });
     },
     [editor]
@@ -270,6 +421,37 @@ export const EditorArea = () => {
     return () => resizeObserver.unobserve(outerContainer);
   }, [editor]);
 
+  // render grid
+  useEffect(() => {
+    const setPageSettings = (s: LabelEditorState) => {
+      if (!s.editor) return;
+
+      if (s.pageSettings.scale['uniform.enable']) {
+        s.editor.canvas.uniformScaling = true;
+      } else {
+        s.editor.canvas.uniformScaling = false;
+      }
+    };
+    setPageSettings(labelEditorStore.getState());
+
+    return labelEditorStore.subscribe((s, ps) => {
+      if (
+        Object.entries(s.pageSettings).some(
+          ([k, v]) =>
+            v !== ps.pageSettings[k as keyof LabelEditorState['pageSettings']]
+        )
+      ) {
+        setPageSettings(s);
+      }
+
+      if (s.pageSettings === ps.pageSettings) return;
+      const grid = s.pageSettings.grid;
+
+      // TODO: draw grid if enabled
+    });
+  }, [editor]);
+
+  // initialize editor in label editor store
   useEffect(() => {
     if (!editor) return;
     labelEditorStore.setState({ editor });

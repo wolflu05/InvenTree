@@ -1,4 +1,4 @@
-import { Trans, t } from '@lingui/macro';
+import { Trans, select, t } from '@lingui/macro';
 import {
   Accordion,
   Container,
@@ -11,18 +11,32 @@ import {
   Tooltip
 } from '@mantine/core';
 import {
+  IconAngle,
   IconDimensions,
   IconFileBarcode,
   IconGrid4x4,
   IconLayoutCards,
+  IconLock,
+  IconMagnet,
+  IconResize,
   IconStack2,
   TablerIconsProps
 } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { useLabelEditorState } from '../LabelEditorContext';
+import {
+  PageSettingsType,
+  useLabelEditorState,
+  useLabelEditorStore
+} from '../LabelEditorContext';
 import { LabelEditorObjectsMap } from '../objects';
-import { InputGroup, useInputGroupState } from './Components';
+import { convertUnit } from '../utils';
+import {
+  InputGroup,
+  UseInputGroupProps,
+  unitInputGroupBlur,
+  useInputGroupState
+} from './Components';
 
 type RightPanelComponent = (props: {}) => JSX.Element;
 
@@ -34,6 +48,60 @@ type RightPanelType = {
   icon: (props: TablerIconsProps) => JSX.Element;
   panel: RightPanelComponent;
   header?: RightPanelComponent;
+};
+
+type UsePageSettingsInputGroupStateProps<T extends any[]> = {
+  unitKey?: string;
+  valueKeys?: string[];
+  pageSettingsKey: keyof PageSettingsType;
+} & UseInputGroupProps<T>;
+
+const usePageSettingsInputGroupState = <T extends any[]>(
+  props: UsePageSettingsInputGroupStateProps<T>
+) => {
+  const labelEditorStore = useLabelEditorStore();
+
+  const onBlur = useMemo(() => {
+    if (props.unitKey) {
+      return unitInputGroupBlur({
+        unitKey: props.unitKey,
+        valueKeys: props.valueKeys || []
+      });
+    } else {
+      return props.onBlur as any;
+    }
+  }, [props.unitKey, props.valueKeys, props.onBlur]);
+
+  const inputState = useInputGroupState({
+    ...props,
+    onBlur,
+    updateCanvas: (values) => {
+      labelEditorStore.setState((s) => ({
+        pageSettings: { ...s.pageSettings, [props.pageSettingsKey]: values }
+      }));
+    },
+    updateInputs: (values) => {
+      for (const [key, value] of Object.entries(values)) {
+        inputState.setValue(key, value);
+      }
+    }
+  });
+
+  useEffect(() => {
+    inputState.triggerUpdate(
+      labelEditorStore.getState().pageSettings[props.pageSettingsKey]
+    );
+    return labelEditorStore.subscribe((s, ps) => {
+      if (
+        s.pageSettings[props.pageSettingsKey] ===
+        ps.pageSettings[props.pageSettingsKey]
+      )
+        return;
+      inputState.triggerUpdate(s.pageSettings[props.pageSettingsKey]);
+    });
+  }, []);
+
+  return inputState;
 };
 
 const DocumentRightPanel: RightPanelComponent = () => {
@@ -66,20 +134,32 @@ const DocumentRightPanel: RightPanelComponent = () => {
     ]
   });
 
-  const grid = useInputGroupState({
+  const grid = usePageSettingsInputGroupState({
     name: t`Grid`,
     icon: IconGrid4x4,
-    onChange: (key, value) => {
-      console.log(key, value);
+    onBlur: (key, value, values, oldState, state) => {
+      if (key === 'size.size') {
+        const v = 1 / convertUnit(value, values['size.unit'], 'in');
+        state.setValue('dpi.value', v);
+        values['dpi.value'] = v;
+      }
+
+      if (key === 'dpi.value') {
+        const v = convertUnit(1 / value, 'in', values['size.unit']);
+        state.setValue('size.size', v);
+        values['size.size'] = v;
+      }
+
+      unitInputGroupBlur({
+        unitKey: 'size.unit',
+        valueKeys: ['size.size']
+      })(key, value, values, oldState, state);
     },
+    pageSettingsKey: 'grid',
     inputRows: [
       {
-        key: 'enable',
-        columns: [{ key: 'enable', label: t`Enable grid`, type: 'boolean' }]
-      },
-      {
         key: 'show',
-        columns: [{ key: 'show', label: t`Show grid`, type: 'boolean' }]
+        columns: [{ key: 'show', label: t`Show grid`, type: 'switch' }]
       },
       {
         key: 'size',
@@ -93,18 +173,59 @@ const DocumentRightPanel: RightPanelComponent = () => {
         columns: [
           {
             key: 'value',
-            label: t`Dots per`,
+            label: t`DPI`,
             type: 'number'
-          },
+          }
+        ]
+      }
+    ]
+  });
+
+  const snap = usePageSettingsInputGroupState({
+    name: t`Snapping`,
+    icon: IconMagnet,
+    pageSettingsKey: 'snap',
+    inputRows: [
+      {
+        key: 'grid',
+        columns: [
           {
-            key: 'unit',
-            label: t`Unit`,
-            type: 'select',
-            selectOptions: [
-              { value: 'dpi', label: 'dpi' },
-              { value: 'dpcm', label: 'dpcm' },
-              { value: 'dpmm', label: 'dpmm' }
-            ]
+            key: 'enable',
+            label: t`Grid snap`,
+            type: 'checkbox',
+            icon: IconGrid4x4
+          }
+        ]
+      },
+      {
+        key: 'angle',
+        columns: [
+          {
+            key: 'enable',
+            type: 'checkbox',
+            icon: IconAngle,
+            tooltip: t`Alt key to modify`
+          },
+          { key: 'value', label: t`Angle [°]`, type: 'number' }
+        ]
+      }
+    ]
+  });
+
+  const scale = usePageSettingsInputGroupState({
+    name: t`Scale`,
+    icon: IconResize,
+    pageSettingsKey: 'scale',
+    inputRows: [
+      {
+        key: 'uniform',
+        columns: [
+          {
+            key: 'enable',
+            label: t`Uniform scaling`,
+            type: 'checkbox',
+            icon: IconLock,
+            tooltip: t`Alt key to modify`
           }
         ]
       }
@@ -112,9 +233,11 @@ const DocumentRightPanel: RightPanelComponent = () => {
   });
 
   return (
-    <Stack p={10}>
+    <Stack p={10} spacing="lg">
       <InputGroup state={dimensions} />
       <InputGroup state={grid} />
+      <InputGroup state={snap} />
+      <InputGroup state={scale} />
     </Stack>
   );
 };
@@ -123,9 +246,25 @@ const ElementsRightPanel: RightPanelComponent = () => {
   const objects = useLabelEditorState((s) => s.objects);
   const editor = useLabelEditorState((s) => s.editor);
   const selectedObjects = useLabelEditorState((s) => s.selectedObjects);
+  const selectedObjectsList = useMemo(
+    () => selectedObjects.flatMap((o) => [o, ...(o.group?._objects || [])]),
+    [selectedObjects]
+  );
+
+  const stackRef = useRef<HTMLDivElement>(null);
 
   return (
-    <Stack p={10}>
+    <Stack
+      p={10}
+      style={{ flex: 1, height: '100%' }}
+      onClick={(e) => {
+        if (e.target === stackRef.current) {
+          editor?.canvas.discardActiveObject();
+          editor?.canvas.requestRenderAll();
+        }
+      }}
+      ref={stackRef}
+    >
       <List withPadding>
         {objects.map((object, index) => (
           <List.Item key={index}>
@@ -136,7 +275,7 @@ const ElementsRightPanel: RightPanelComponent = () => {
               }}
               style={{
                 cursor: 'pointer',
-                fontWeight: selectedObjects?.includes(object) ? 600 : 400
+                fontWeight: selectedObjectsList.includes(object) ? 600 : 400
               }}
             >
               {object.type} ({index})
@@ -184,6 +323,7 @@ const ObjectOptionsRightPanel: RightPanelComponent = () => {
 
   useEffect(() => {
     if (!component) return;
+    setActivePanels([]); // fix bug where the first panel is not opened sometimes
     setActivePanels([component.settingBlocks[0].key]);
   }, [component]);
 
@@ -266,6 +406,11 @@ const panels: RightPanelType[] = [
 
 export function RightPanel() {
   const [activePanel, setActivePanel] = useState<null | string>(panels[0].key);
+  const labelEditorStore = useLabelEditorStore();
+
+  useEffect(() => {
+    labelEditorStore.setState({ setRightPanel: setActivePanel });
+  }, [setActivePanel]);
 
   return (
     <div style={{ width: '300px', minWidth: '300px', display: 'flex' }}>

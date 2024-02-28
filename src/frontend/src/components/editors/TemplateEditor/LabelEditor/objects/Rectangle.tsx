@@ -18,7 +18,6 @@ export const Rectangle: LabelEditorObject = {
     }
   ],
   fabricElement: createFabricObject(fabric.Rect, {
-    type: 'rectangle',
-    abc: 1
+    type: 'rectangle'
   })
 };
