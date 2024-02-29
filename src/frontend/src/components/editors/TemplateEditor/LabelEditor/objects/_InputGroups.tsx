@@ -29,6 +29,11 @@ type UseObjectInputGroupStateProps<T extends any[]> = {
     inputKey: string;
   }[];
   triggerUpdateEvents?: fabric.EventName[];
+  beforeCanvasUpdate?: (
+    values: Record<string, any>,
+    obj: fabric.Object
+  ) => void;
+  afterCanvasUpdate?: (values: Record<string, any>, obj: fabric.Object) => void;
 } & UseInputGroupProps<T>;
 
 export const useObjectInputGroupState = <T extends any[]>(
@@ -57,6 +62,8 @@ export const useObjectInputGroupState = <T extends any[]>(
       if (selectedObjects?.length !== 1) return;
       const obj = selectedObjects[0];
 
+      props.beforeCanvasUpdate?.(values, obj);
+
       for (const { objAttr, inputKey } of props.connections) {
         let value = values[inputKey];
         if (
@@ -75,6 +82,9 @@ export const useObjectInputGroupState = <T extends any[]>(
         obj[props.connectionUnitKey] = values[props.unitKey];
       }
 
+      props.afterCanvasUpdate?.(values, obj);
+
+      editor?.canvas.fire('object:modified', { target: obj });
       editor?.canvas.requestRenderAll();
     },
     updateInputs: (obj: fabric.Object) => {
@@ -186,7 +196,7 @@ export const SizeInputGroup = () => {
         ]
       }
     ],
-    triggerUpdateEvents: ['object:scaling', 'object:added']
+    triggerUpdateEvents: ['object:scaling', 'object:added', 'object:modified']
   });
 
   return <InputGroup state={size} />;
@@ -209,14 +219,20 @@ export const AngleInputGroup = () => {
   return <InputGroup state={angle} />;
 };
 
-export const BackgroundColorInputGroup = () => {
+export const ColorInputGroup = ({
+  name,
+  attr
+}: {
+  name?: string;
+  attr?: string;
+}) => {
   const backgroundColor = useObjectInputGroupState({
-    name: t`Background Color`,
+    name: name ?? t`Color`,
     icon: IconPalette,
-    connections: [{ objAttr: 'fill', inputKey: 'backgroundColor.value' }],
+    connections: [{ objAttr: attr ?? 'fill', inputKey: 'color.value' }],
     inputRows: [
       {
-        key: 'backgroundColor',
+        key: 'color',
         columns: [{ key: 'value', type: 'color' }]
       }
     ],
@@ -226,9 +242,9 @@ export const BackgroundColorInputGroup = () => {
   return <InputGroup state={backgroundColor} />;
 };
 
-export const BorderStyleInputGroup = () => {
+export const BorderStyleInputGroup = ({ name }: { name?: string }) => {
   const borderStyle = useObjectInputGroupState({
-    name: t`Border Style`,
+    name: name ?? t`Border Style`,
     icon: IconBorderOuter,
     unitKey: 'width.unit',
     valueKeys: ['width.value'],

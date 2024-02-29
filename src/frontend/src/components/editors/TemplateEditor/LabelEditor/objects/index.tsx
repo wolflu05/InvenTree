@@ -3,6 +3,7 @@ import { fabric } from 'fabric';
 
 import { Circle } from './Circle';
 import { Rectangle } from './Rectangle';
+import { Text } from './Text';
 
 export type ObjectPanelBlock = (props: {}) => React.JSX.Element;
 
@@ -18,6 +19,7 @@ export type LabelEditorObject = {
   icon: (props: TablerIconsProps) => React.JSX.Element;
   settingBlocks: SettingBlock[];
   fabricElement: any;
+  useCanvasEvents?: () => void;
   defaultOpen: string[];
   export: {
     style?: (object: Record<string, any>, id: string) => string;
@@ -25,7 +27,11 @@ export type LabelEditorObject = {
   };
 };
 
-export const LabelEditorObjects: LabelEditorObject[] = [Rectangle, Circle];
+export const LabelEditorObjects: LabelEditorObject[] = [
+  Rectangle,
+  Circle,
+  Text
+];
 
 export const LabelEditorObjectsMap: Record<string, LabelEditorObject> =
   Object.fromEntries(LabelEditorObjects.map((object) => [object.key, object]));

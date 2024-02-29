@@ -37,11 +37,23 @@ type InputGroupInputProps = {
   disabled?: boolean;
 } & {
   label?: string;
-  type?: 'number' | 'switch' | 'checkbox' | 'select' | 'text' | 'color';
+  type?:
+    | 'number'
+    | 'switch'
+    | 'checkbox'
+    | 'select'
+    | 'text'
+    | 'color'
+    | 'radio';
   icon?: (props: TablerIconsProps) => JSX.Element;
   tooltip?: string;
   defaultValue?: number | boolean | string;
   selectOptions?: { value: string; label: string }[];
+  radioOptions?: {
+    value: string;
+    label?: string;
+    icon?: (props: TablerIconsProps) => JSX.Element;
+  }[];
   template?: 'unit';
 };
 
@@ -379,6 +391,53 @@ export const InputGroup = <T extends any[]>({
                   ]}
                   format="rgba"
                 />
+              );
+            }
+
+            if (input.type === 'radio') {
+              return (
+                <Group key={idx} noWrap>
+                  {input.radioOptions?.map((option, idx) => (
+                    <Checkbox
+                      key={option.value}
+                      mt={10}
+                      mr={8}
+                      style={{ alignSelf: 'flex-end' }}
+                      styles={{
+                        label: { fontSize: '0.875rem', cursor: 'pointer' },
+                        input: { cursor: 'pointer' }
+                      }}
+                      icon={({ className }) =>
+                        option.icon ? (
+                          <option.icon className={className} />
+                        ) : (
+                          <IconCheck className={className} />
+                        )
+                      }
+                      disabled={input.disabled}
+                      label={option.label ? option.label : undefined}
+                      indeterminate={
+                        option.icon ? value[key] !== option.value : false
+                      }
+                      checked={value[key] === option.value}
+                      onChange={(e) => {
+                        setValue(key, option.value);
+                        const newValue = {
+                          ...value,
+                          [key]: option.value
+                        };
+                        state.onBlur?.(
+                          key,
+                          option.value,
+                          newValue,
+                          value,
+                          state
+                        );
+                      }}
+                      size={option.icon ? 'lg' : undefined}
+                    />
+                  ))}
+                </Group>
               );
             }
           })}

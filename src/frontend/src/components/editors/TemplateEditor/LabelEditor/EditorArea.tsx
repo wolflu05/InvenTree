@@ -9,6 +9,7 @@ import {
   useLabelEditorState,
   useLabelEditorStore
 } from './LabelEditorContext';
+import { LabelEditorObjects } from './objects';
 import { unitToPixel } from './utils';
 
 const useStyles = createStyles((theme) => ({
@@ -375,6 +376,10 @@ export const EditorArea = () => {
     },
     [editor]
   );
+
+  for (const obj of LabelEditorObjects) {
+    obj.useCanvasEvents?.();
+  }
 
   // add page element
   useEffect(() => {

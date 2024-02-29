@@ -35,11 +35,16 @@ export const createFabricObject = (
     strokeWidth: 0,
     strokeWidthUnit: 'mm',
 
-    initialize(props: InitializeProps) {
+    initialize(...args: any[]) {
+      let props: InitializeProps = args[0];
+      if (typeof props !== 'object' || !('state' in props)) {
+        props = args[1];
+      }
+
       this.positionUnit = props.state.pageSettings.unit['length.unit'];
       this.sizeUnit = props.state.pageSettings.unit['length.unit'];
       this.strokeWidthUnit = props.state.pageSettings.unit['length.unit'];
-      this.callSuper('initialize', props);
+      this.callSuper('initialize', ...args);
     },
 
     toObject() {
@@ -99,14 +104,18 @@ export const styleHelper = {
     `width: ${c(object.width, object.sizeUnit)};`,
     `height: ${c(object.height, object.sizeUnit)};`
   ],
-  background: (object) => {
-    if (!object.fill) return [];
-    return [`background-color: ${object.fill};`];
+  background: (object, attr = 'fill') => {
+    if (!object[attr]) return [];
+    return [`background-color: ${object[attr]};`];
+  },
+  color: (object, attr = 'fill') => {
+    if (!object[attr]) return [];
+    return [`color: ${object[attr]};`];
   },
   border: (object) => {
     if (object.strokeWidth === 0) return [];
     return [
-      `border: ${c(object.strokeWidth, object.strokeWidthUnit)} solid ${
+      `outline: ${c(object.strokeWidth, object.strokeWidthUnit)} solid ${
         object.stroke
       };`
     ];

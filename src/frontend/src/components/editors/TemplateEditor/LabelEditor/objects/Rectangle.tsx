@@ -12,8 +12,8 @@ import {
 } from './_BaseObject';
 import {
   AngleInputGroup,
-  BackgroundColorInputGroup,
   BorderStyleInputGroup,
+  ColorInputGroup,
   PositionInputGroup,
   SizeInputGroup
 } from './_InputGroups';
@@ -41,7 +41,7 @@ export const Rectangle: LabelEditorObject = {
       name: t`Style`,
       component: () => (
         <Stack>
-          <BackgroundColorInputGroup />
+          <ColorInputGroup name={t`Background color`} />
           <BorderStyleInputGroup />
         </Stack>
       )
