@@ -1,11 +1,22 @@
 import { t } from '@lingui/macro';
+import { Stack } from '@mantine/core';
 import { IconRectangleFilled } from '@tabler/icons-react';
 import { fabric } from 'fabric';
 
 import { LabelEditorObject } from '.';
-import { pixelToUnit } from '../utils';
-import { LayoutPanelBlock, StylePanelBlock } from './Rectangle.settings';
-import { GeneralSettingBlock, createFabricObject } from './_BaseObject';
+import {
+  GeneralSettingBlock,
+  buildStyle,
+  createFabricObject,
+  styleHelper
+} from './_BaseObject';
+import {
+  AngleInputGroup,
+  BackgroundColorInputGroup,
+  BorderStyleInputGroup,
+  PositionInputGroup,
+  SizeInputGroup
+} from './_InputGroups';
 
 export const Rectangle: LabelEditorObject = {
   key: 'rect',
@@ -17,17 +28,27 @@ export const Rectangle: LabelEditorObject = {
     {
       key: 'layout',
       name: t`Layout`,
-      component: LayoutPanelBlock
+      component: () => (
+        <Stack>
+          <PositionInputGroup />
+          <AngleInputGroup />
+          <SizeInputGroup />
+        </Stack>
+      )
     },
     {
       key: 'style',
       name: t`Style`,
-      component: StylePanelBlock
+      component: () => (
+        <Stack>
+          <BackgroundColorInputGroup />
+          <BorderStyleInputGroup />
+        </Stack>
+      )
     }
   ],
   fabricElement: createFabricObject(fabric.Rect, {
     type: 'rect',
-    stroke: '#000000',
 
     initialize(props) {
       this.width = 50;
@@ -38,20 +59,12 @@ export const Rectangle: LabelEditorObject = {
   }),
   export: {
     style: (object, id) => {
-      const c = (n: number, u: string) =>
-        Math.round((pixelToUnit(n, u) + Number.EPSILON) * 10 ** 15) / 10 ** 15 +
-        u;
-      return `      #${id} {
-        position: absolute;
-        top: ${c(object.top, object.positionUnit)};
-        left: ${c(object.left, object.positionUnit)};
-        width: ${c(object.width, object.sizeUnit)};
-        height: ${c(object.height, object.sizeUnit)};
-        background-color: ${object.fill};
-        border: ${c(object.strokeWidth, object.strokeWidthUnit)} solid ${
-        object.stroke
-      };
-      }`;
+      return buildStyle(id, [
+        ...styleHelper.position(object),
+        ...styleHelper.size(object),
+        ...styleHelper.background(object),
+        ...styleHelper.border(object)
+      ]);
     },
     content: (object, id) => {
       return `<div id="${id}"></div>`;

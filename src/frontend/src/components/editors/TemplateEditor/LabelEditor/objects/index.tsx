@@ -27,10 +27,8 @@ export type LabelEditorObject = {
 
 export const LabelEditorObjects: LabelEditorObject[] = [Rectangle, Circle];
 
-export const LabelEditorObjectsMap: Record<string, LabelEditorObject> = {
-  rect: Rectangle,
-  circle: Circle
-};
+export const LabelEditorObjectsMap: Record<string, LabelEditorObject> =
+  Object.fromEntries(LabelEditorObjects.map((object) => [object.key, object]));
 
 // @ts-ignore
 fabric.Custom = Object.fromEntries(

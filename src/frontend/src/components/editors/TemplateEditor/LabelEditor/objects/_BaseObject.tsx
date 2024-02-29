@@ -4,6 +4,7 @@ import { fabric } from 'fabric';
 
 import { ObjectPanelBlock, SettingBlock } from '.';
 import { LabelEditorState } from '../LabelEditorContext';
+import { pixelToUnit } from '../utils';
 import { NameInputGroup } from './_InputGroups';
 
 type InitializeProps = {
@@ -30,6 +31,7 @@ export const createFabricObject = (
   const customBase = fabric.util.createClass(base, {
     positionUnit: 'mm',
     sizeUnit: 'mm',
+    stroke: '#000000',
     strokeWidth: 0,
     strokeWidthUnit: 'mm',
 
@@ -76,3 +78,37 @@ export const GeneralSettingBlock: SettingBlock = {
   name: t`General`,
   component: GeneralPanelBlock
 };
+
+export const buildStyle = (id: string, style: string[]) => `#${id} {
+${style
+  .filter((x) => !!x)
+  .map((x) => '  ' + x.trimStart())
+  .join('\n')}
+}`;
+
+export const c = (n: number, u: string) =>
+  Math.round((pixelToUnit(n, u) + Number.EPSILON) * 10 ** 15) / 10 ** 15 + u;
+
+export const styleHelper = {
+  position: (object) => [
+    'position: absolute;',
+    `top: ${c(object.top, object.positionUnit)};`,
+    `left: ${c(object.left, object.positionUnit)};`
+  ],
+  size: (object) => [
+    `width: ${c(object.width, object.sizeUnit)};`,
+    `height: ${c(object.height, object.sizeUnit)};`
+  ],
+  background: (object) => {
+    if (!object.fill) return [];
+    return [`background-color: ${object.fill};`];
+  },
+  border: (object) => {
+    if (object.strokeWidth === 0) return [];
+    return [
+      `border: ${c(object.strokeWidth, object.strokeWidthUnit)} solid ${
+        object.stroke
+      };`
+    ];
+  }
+} satisfies Record<string, (object: Record<string, any>) => string[]>;
