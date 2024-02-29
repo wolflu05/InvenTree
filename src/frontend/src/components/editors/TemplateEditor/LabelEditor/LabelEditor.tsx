@@ -1,14 +1,7 @@
 import { t } from '@lingui/macro';
 import { Stack } from '@mantine/core';
 import Split from '@uiw/react-split';
-import { fabric } from 'fabric';
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState
-} from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 import { EditorComponent } from '../TemplateEditor';
 import { EditorArea } from './EditorArea';
@@ -21,6 +14,7 @@ import { LabelEditorObjectsMap } from './objects';
 import { FooterPanel } from './panels/FooterPanel';
 import { LeftPanel } from './panels/LeftPanel';
 import { RightPanel } from './panels/RightPanel';
+import { unitToPixel } from './utils';
 
 export const LabelEditorComponentE: EditorComponent = forwardRef(
   (props, ref) => {
@@ -35,8 +29,8 @@ export const LabelEditorComponentE: EditorComponent = forwardRef(
 
     useEffect(() => {
       storeRef.current?.setState({
-        pageWidth: fabric.util.parseUnit(template?.width + 'mm') as number,
-        pageHeight: fabric.util.parseUnit(template?.height + 'mm') as number
+        pageWidth: unitToPixel(template?.width, 'mm'),
+        pageHeight: unitToPixel(template?.height, 'mm')
       });
     }, [template?.width, template?.height]);
 
