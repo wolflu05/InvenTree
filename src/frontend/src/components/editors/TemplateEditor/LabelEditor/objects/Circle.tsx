@@ -23,5 +23,6 @@ export const Circle: LabelEditorObject = {
     radius: 25,
     width: 50,
     height: 50
-  })
+  }),
+  export: {}
 };

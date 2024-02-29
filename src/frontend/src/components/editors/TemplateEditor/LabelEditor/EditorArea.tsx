@@ -395,7 +395,8 @@ export const EditorArea = () => {
       strokeWidth: strokeWidth,
       evented: false,
       selectable: false,
-      hoverCursor: 'default'
+      hoverCursor: 'default',
+      excludeFromExport: true
     });
 
     editorState.current.pageElement = pageElement;
@@ -463,5 +464,39 @@ export const EditorArea = () => {
     labelEditorStore.setState({ editor });
   }, [editor]);
 
-  return <FabricJSCanvas onReady={onReady} className={classes.editorCanvas} />;
+  const customOnReady = useCallback(
+    (canvas: fabric.Canvas) => {
+      // initialize fabricjs canvas
+      onReady(canvas);
+
+      // load existing template
+      const s = labelEditorStore.getState();
+      if (s.templateStr) {
+        const objects = JSON.parse(s.templateStr).objects;
+        objects.forEach((o: any) => {
+          o.state = s;
+        });
+
+        fabric.util.enlivenObjects(
+          objects,
+          (objects: any) => {
+            objects.forEach((o: fabric.Object) => {
+              canvas.add(o);
+            });
+            labelEditorStore.setState((s) => ({
+              objects: [...s.objects, ...(objects as fabric.Object[])],
+              templateStr: undefined
+            }));
+            canvas.renderAll();
+          },
+          'fabric.Custom'
+        );
+      }
+    },
+    [onReady]
+  );
+
+  return (
+    <FabricJSCanvas onReady={customOnReady} className={classes.editorCanvas} />
+  );
 };

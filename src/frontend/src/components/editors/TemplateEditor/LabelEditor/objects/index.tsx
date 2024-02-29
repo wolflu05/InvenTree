@@ -1,4 +1,5 @@
 import { TablerIconsProps } from '@tabler/icons-react';
+import { fabric } from 'fabric';
 
 import { Circle } from './Circle';
 import { Rectangle } from './Rectangle';
@@ -18,6 +19,10 @@ export type LabelEditorObject = {
   settingBlocks: SettingBlock[];
   fabricElement: any;
   defaultOpen: string[];
+  export: {
+    style?: (object: Record<string, any>, id: string) => string;
+    content?: (object: Record<string, any>, id: string) => string;
+  };
 };
 
 export const LabelEditorObjects: LabelEditorObject[] = [Rectangle, Circle];
@@ -26,3 +31,11 @@ export const LabelEditorObjectsMap: Record<string, LabelEditorObject> = {
   rect: Rectangle,
   circle: Circle
 };
+
+// @ts-ignore
+fabric.Custom = Object.fromEntries(
+  Object.entries(LabelEditorObjectsMap).map(([key, value]) => [
+    key[0].toUpperCase() + key.slice(1),
+    value.fabricElement
+  ])
+);

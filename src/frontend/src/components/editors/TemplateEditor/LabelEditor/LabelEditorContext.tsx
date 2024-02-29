@@ -15,6 +15,7 @@ export type LabelEditorState = {
   pageWidth: number;
   pageHeight: number;
   template: Record<string, any>;
+  templateStr?: string;
   pageSettings: PageSettingsType;
 };
 type LabelEditorStateInitProps = Pick<LabelEditorState, 'template'>;

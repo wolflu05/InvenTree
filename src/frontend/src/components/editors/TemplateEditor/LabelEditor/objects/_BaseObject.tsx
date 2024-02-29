@@ -16,8 +16,17 @@ export const createFabricObject = (
   base: typeof fabric.Object,
   properties: Record<any, any> & {
     initialize?: (props: InitializeProps) => void;
-  }
+  },
+  customFields?: string[]
 ) => {
+  const fields = [
+    'positionUnit',
+    'sizeUnit',
+    'strokeWidthUnit',
+    'name',
+    ...(customFields || [])
+  ];
+
   const customBase = fabric.util.createClass(base, {
     positionUnit: 'mm',
     sizeUnit: 'mm',
@@ -29,26 +38,29 @@ export const createFabricObject = (
       this.sizeUnit = props.state.pageSettings.unit['length.unit'];
       this.strokeWidthUnit = props.state.pageSettings.unit['length.unit'];
       this.callSuper('initialize', props);
+    },
 
-      setTimeout(() => {
-        let nextNum = 0;
-        this.canvas.getObjects().forEach((obj: fabric.Object) => {
-          if (obj.type === this.type) {
-            // calculate the next free number for this element
-            const num = (obj.name || '').match(/\((\d+)\)/);
-            if (num) {
-              nextNum = Math.max(nextNum, parseInt(num[1], 10) + 1);
-            }
-          }
-        });
-
-        this.name = `${this.type} (${nextNum})`;
-        this.canvas.fire('object:modified', { target: this });
-      }, 1);
+    toObject() {
+      return this.callSuper('toObject', fields) as Record<string, any>;
     }
   });
 
-  return fabric.util.createClass(customBase, properties);
+  const cls = fabric.util.createClass(customBase, properties);
+
+  cls.fromObject = function (
+    o: Record<string, any>,
+    callback: (obj: fabric.Object) => any
+  ) {
+    const obj = new cls(o);
+
+    Object.entries(o).forEach(([key, value]) => {
+      obj[key] = value;
+    });
+
+    callback(obj);
+  };
+
+  return cls;
 };
 
 const GeneralPanelBlock: ObjectPanelBlock = () => {

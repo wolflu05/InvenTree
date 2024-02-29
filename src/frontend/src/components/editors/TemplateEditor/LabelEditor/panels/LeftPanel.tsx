@@ -23,6 +23,22 @@ export function LeftPanel() {
       });
 
       editor.canvas.add(obj);
+
+      // get the next name for the object
+      let nextNum = 0;
+      editor.canvas.getObjects().forEach((o: fabric.Object) => {
+        if (o.type === obj.type) {
+          // calculate the next free number for this element
+          const num = (o.name || '').match(/\((\d+)\)/);
+          if (num) {
+            nextNum = Math.max(nextNum, parseInt(num[1], 10) + 1);
+          }
+        }
+      });
+
+      obj.name = `${obj.type} (${nextNum})`;
+      editor.canvas.fire('object:modified', { target: obj });
+
       editor.canvas.setActiveObject(obj);
       state.setRightPanel?.('object-options');
     },
