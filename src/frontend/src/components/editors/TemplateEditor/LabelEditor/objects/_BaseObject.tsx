@@ -22,10 +22,12 @@ export const createFabricObject = (
     positionUnit: 'mm',
     sizeUnit: 'mm',
     strokeWidth: 0,
+    strokeWidthUnit: 'mm',
 
     initialize(props: InitializeProps) {
       this.positionUnit = props.state.pageSettings.unit['length.unit'];
       this.sizeUnit = props.state.pageSettings.unit['length.unit'];
+      this.strokeWidthUnit = props.state.pageSettings.unit['length.unit'];
       this.callSuper('initialize', props);
 
       setTimeout(() => {

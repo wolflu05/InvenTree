@@ -1,8 +1,8 @@
 import { t } from '@lingui/macro';
 import {
   Checkbox,
+  ColorInput,
   Group,
-  Input,
   NumberInput,
   Select,
   Stack,
@@ -12,9 +12,8 @@ import {
   Tooltip
 } from '@mantine/core';
 import { IconCheck, TablerIconsProps } from '@tabler/icons-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 
-import { useEvents } from '../../../../../hooks/UseEvents';
 import { PageSettingsType, useLabelEditorStore } from '../LabelEditorContext';
 import { convertUnit, units } from '../utils';
 
@@ -38,7 +37,7 @@ type InputGroupInputProps = {
   disabled?: boolean;
 } & {
   label?: string;
-  type?: 'number' | 'switch' | 'checkbox' | 'select' | 'text';
+  type?: 'number' | 'switch' | 'checkbox' | 'select' | 'text' | 'color';
   icon?: (props: TablerIconsProps) => JSX.Element;
   tooltip?: string;
   defaultValue?: number | boolean | string;
@@ -338,6 +337,47 @@ export const InputGroup = <T extends any[]>({
                       state
                     );
                   }}
+                />
+              );
+            }
+
+            if (input.type === 'color') {
+              return (
+                <ColorInput
+                  key={idx}
+                  label={input.label}
+                  disabled={input.disabled}
+                  value={value[key]}
+                  size="xs"
+                  onChange={(value) => setValue(key, value)}
+                  onChangeEnd={(v) => {
+                    setValue(key, v);
+                    state?.onBlur?.(
+                      key,
+                      v,
+                      { ...value, [key]: v },
+                      value,
+                      state
+                    );
+                  }}
+                  swatches={[
+                    'rgba(0,0,0,0)',
+                    '#25262b',
+                    '#868e96',
+                    '#fa5252',
+                    '#e64980',
+                    '#be4bdb',
+                    '#7950f2',
+                    '#4c6ef5',
+                    '#228be6',
+                    '#15aabf',
+                    '#12b886',
+                    '#40c057',
+                    '#82c91e',
+                    '#fab005',
+                    '#fd7e14'
+                  ]}
+                  format="rgba"
                 />
               );
             }

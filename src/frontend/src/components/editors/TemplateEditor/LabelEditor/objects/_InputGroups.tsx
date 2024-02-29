@@ -2,7 +2,9 @@ import { t } from '@lingui/macro';
 import {
   IconAngle,
   IconArrowsRightDown,
+  IconBorderOuter,
   IconDimensions,
+  IconPalette,
   IconTag
 } from '@tabler/icons-react';
 import { fabric } from 'fabric';
@@ -65,8 +67,7 @@ export const useObjectInputGroupState = <T extends any[]>(
           value = unitToPixel(value, values[props.unitKey]);
         }
 
-        // @ts-ignore-next-line
-        obj[objAttr] = value;
+        obj.set({ [objAttr]: value });
       }
 
       if (props.unitKey && props.connectionUnitKey) {
@@ -206,4 +207,51 @@ export const AngleInputGroup = () => {
   });
 
   return <InputGroup state={angle} />;
+};
+
+export const BackgroundColorInputGroup = () => {
+  const backgroundColor = useObjectInputGroupState({
+    name: t`Background Color`,
+    icon: IconPalette,
+    connections: [{ objAttr: 'fill', inputKey: 'backgroundColor.value' }],
+    inputRows: [
+      {
+        key: 'backgroundColor',
+        columns: [{ key: 'value', type: 'color' }]
+      }
+    ],
+    triggerUpdateEvents: ['object:modified']
+  });
+
+  return <InputGroup state={backgroundColor} />;
+};
+
+export const BorderStyleInputGroup = () => {
+  const borderStyle = useObjectInputGroupState({
+    name: t`Border Style`,
+    icon: IconBorderOuter,
+    unitKey: 'width.unit',
+    valueKeys: ['width.value'],
+    connectionUnitKey: 'strokeWidthUnit',
+    connections: [
+      { objAttr: 'stroke', inputKey: 'color.value' },
+      { objAttr: 'strokeWidth', inputKey: 'width.value' }
+    ],
+    inputRows: [
+      {
+        key: 'color',
+        columns: [{ key: 'value', type: 'color', defaultValue: '#000000' }]
+      },
+      {
+        key: 'width',
+        columns: [
+          { key: 'value', type: 'number', label: t`Width`, defaultValue: 1 },
+          { key: 'unit', template: 'unit' }
+        ]
+      }
+    ],
+    triggerUpdateEvents: ['object:modified']
+  });
+
+  return <InputGroup state={borderStyle} />;
 };

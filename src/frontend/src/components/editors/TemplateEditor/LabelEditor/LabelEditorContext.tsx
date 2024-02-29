@@ -23,7 +23,6 @@ export type LabelEditorStore = ReturnType<typeof createLabelEditorStore>;
 
 const defaultPageSettings = {
   grid: {
-    'show.show': false,
     'size.size': 1 / 600,
     'size.unit': 'in',
     'dpi.value': 600

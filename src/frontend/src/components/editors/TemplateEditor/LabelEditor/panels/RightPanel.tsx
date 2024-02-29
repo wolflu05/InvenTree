@@ -1,4 +1,4 @@
-import { Trans, select, t } from '@lingui/macro';
+import { Trans, t } from '@lingui/macro';
 import {
   Accordion,
   Container,
@@ -19,7 +19,7 @@ import {
   IconLock,
   IconMagnet,
   IconResize,
-  IconRuler,
+  IconScale,
   IconStack2,
   TablerIconsProps
 } from '@tabler/icons-react';
@@ -137,7 +137,7 @@ const DocumentRightPanel: RightPanelComponent = () => {
 
   const unit = usePageSettingsInputGroupState({
     name: t`Default units`,
-    icon: IconRuler,
+    icon: IconScale,
     pageSettingsKey: 'unit',
     inputRows: [
       {
@@ -176,10 +176,6 @@ const DocumentRightPanel: RightPanelComponent = () => {
     },
     pageSettingsKey: 'grid',
     inputRows: [
-      {
-        key: 'show',
-        columns: [{ key: 'show', label: t`Show grid`, type: 'switch' }]
-      },
       {
         key: 'size',
         columns: [
