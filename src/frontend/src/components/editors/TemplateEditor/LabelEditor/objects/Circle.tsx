@@ -108,6 +108,7 @@ export const Circle: LabelEditorObject = {
       return buildStyle(id, [
         ...styleHelper.position(object),
         ...styleHelper.size(object),
+        ...styleHelper.rotation(object),
         ...styleHelper.background(object),
         ...styleHelper.border(object),
         `border-radius: 50%;`

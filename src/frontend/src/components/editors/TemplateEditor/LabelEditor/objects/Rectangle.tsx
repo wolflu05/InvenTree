@@ -62,6 +62,7 @@ export const Rectangle: LabelEditorObject = {
       return buildStyle(id, [
         ...styleHelper.position(object),
         ...styleHelper.size(object),
+        ...styleHelper.rotation(object),
         ...styleHelper.background(object),
         ...styleHelper.border(object)
       ]);

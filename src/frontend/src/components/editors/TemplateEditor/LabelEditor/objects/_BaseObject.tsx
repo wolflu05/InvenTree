@@ -104,6 +104,13 @@ export const styleHelper = {
     `width: ${c(object.width, object.sizeUnit)};`,
     `height: ${c(object.height, object.sizeUnit)};`
   ],
+  rotation: (object) =>
+    object.angle !== 0
+      ? [
+          'transform-origin: top left;',
+          `transform: rotate(${object.angle}deg);`
+        ]
+      : [],
   background: (object, attr = 'fill') => {
     if (!object[attr]) return [];
     return [`background-color: ${object[attr]};`];

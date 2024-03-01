@@ -282,7 +282,8 @@ export const QrCode: LabelEditorObject = {
     style: (object, id) => {
       return buildStyle(id, [
         ...styleHelper.position(object),
-        ...styleHelper.size(object)
+        ...styleHelper.size(object),
+        ...styleHelper.rotation(object)
       ]);
     },
     content: (object, id) => {

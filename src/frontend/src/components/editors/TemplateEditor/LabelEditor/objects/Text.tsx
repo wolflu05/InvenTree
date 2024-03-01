@@ -205,6 +205,7 @@ export const Text: LabelEditorObject = {
       return buildStyle(id, [
         ...styleHelper.position(object),
         ...styleHelper.size(object),
+        ...styleHelper.rotation(object),
         ...styleHelper.color(object, 'fill'),
         `font-family: ${object.fontFamily};`,
         `font-size: ${c(object.fontSize, object.fontSizeUnit)};`,
