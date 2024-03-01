@@ -239,10 +239,14 @@ export const EditorArea = () => {
         // if grid is enabled, snap to grid when resizing object
         // inspired by: https://stackoverflow.com/a/70673823
         if (settings.snap['grid.enable']) {
-          const gridSize = unitToPixel(
+          let gridSize = unitToPixel(
             settings.grid['size.size'],
             settings.grid['size.unit']
           );
+
+          if ((obj as any).getGridSize) {
+            gridSize = (obj as any).getGridSize(settings);
+          }
 
           const [width, height] = [obj.getScaledWidth(), obj.getScaledHeight()];
 
@@ -273,12 +277,13 @@ export const EditorArea = () => {
           }
         }
 
-        obj.width = obj.width * obj.scaleX;
-        obj.height = obj.height * obj.scaleY;
-        obj.scaleX = 1;
-        obj.scaleY = 1;
-        obj.noScaleCache = false;
-        obj.setCoords();
+        obj.set({
+          width: obj.width * obj.scaleX,
+          height: obj.height * obj.scaleY,
+          scaleX: 1,
+          scaleY: 1,
+          noScaleCache: false
+        });
       });
 
       // snap to grid when moving object

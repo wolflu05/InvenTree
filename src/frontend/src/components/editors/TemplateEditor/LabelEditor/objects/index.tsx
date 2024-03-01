@@ -2,6 +2,7 @@ import { TablerIconsProps } from '@tabler/icons-react';
 import { fabric } from 'fabric';
 
 import { Circle } from './Circle';
+import { QrCode } from './QrCode';
 import { Rectangle } from './Rectangle';
 import { Text } from './Text';
 
@@ -30,7 +31,8 @@ export type LabelEditorObject = {
 export const LabelEditorObjects: LabelEditorObject[] = [
   Rectangle,
   Circle,
-  Text
+  Text,
+  QrCode
 ];
 
 export const LabelEditorObjectsMap: Record<string, LabelEditorObject> =

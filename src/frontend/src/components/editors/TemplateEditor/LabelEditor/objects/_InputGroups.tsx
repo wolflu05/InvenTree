@@ -169,7 +169,7 @@ export const PositionInputGroup = () => {
         ]
       }
     ],
-    triggerUpdateEvents: ['object:moving', 'object:added']
+    triggerUpdateEvents: ['object:moving', 'object:added', 'object:scaling']
   });
 
   return <InputGroup state={position} />;

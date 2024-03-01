@@ -29,7 +29,7 @@ const defaultPageSettings = {
     'dpi.value': 600
   },
   unit: {
-    'length.unit': 'mm'
+    'length.unit': 'in'
   },
   snap: {
     'grid.enable': true,
